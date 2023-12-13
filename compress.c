@@ -35,7 +35,6 @@ int main(int argc, char** argv) {
 
 	unsigned short code = NULL_CODE;
 	int c;
-	size_t pos = 0;
 	while ((c = getc_unlocked(input_file)) != EOF) {
 		unsigned short next_code = codes[code].children[c];
 		if (next_code != NULL_CODE) {
@@ -53,7 +52,6 @@ int main(int argc, char** argv) {
 			}
 			code = codes[NULL_CODE].children[c];
 		}
-		pos++;
 	}
 	fwrite(&code, sizeof(unsigned short), 1, output_file);
 

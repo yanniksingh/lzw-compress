@@ -1,5 +1,5 @@
 CC = clang
-CFLAGS  = -O3 -Wall
+CFLAGS = -O3 -Wall
 
 all: compress decompress
 

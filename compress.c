@@ -2,9 +2,11 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <string.h>
+#include <stdbool.h>
 
-const unsigned short NULL_CODE = 0;
+#define NULL_CODE 0
 #define FIRST_AVAILABLE_CODE 1
+#define BUFSIZE (1 << 10)
 
 typedef struct code {
 	unsigned short children[UCHAR_MAX + 1];
@@ -21,6 +23,24 @@ static inline size_t reset_code_table(code* codes, size_t codes_size) {
 	return next_available_code;
 }
 
+typedef struct buffer {
+	unsigned short buf[BUFSIZE];
+	size_t pos;
+} buffer;
+
+static inline void buffer_reset(buffer* b) {
+	b->pos = 0;
+}
+
+static inline void buffer_write(buffer* b, unsigned short item, FILE* output_file, bool force_flush) {
+	b->buf[b->pos] = item;
+	(b->pos)++;
+	if (b->pos == BUFSIZE || force_flush) {
+		fwrite(b->buf, sizeof(unsigned short), b->pos, output_file);
+		buffer_reset(b);
+	}
+}
+
 int main(int argc, char** argv) {
 	size_t codes_size = USHRT_MAX + 1;
 	code* codes = malloc(codes_size * sizeof(code));
@@ -35,15 +55,17 @@ int main(int argc, char** argv) {
 
 	unsigned short code = NULL_CODE;
 	int c;
+	buffer b;
+	buffer_reset(&b);
 	while ((c = getc_unlocked(input_file)) != EOF) {
 		unsigned short next_code = codes[code].children[c];
 		if (next_code != NULL_CODE) {
 			code = next_code;
 		}
 		else {
-			fwrite(&code, sizeof(unsigned short), 1, output_file);
+			buffer_write(&b, code, output_file, false);
 			if (next_available_code == codes_size) {
-				fwrite(&NULL_CODE, sizeof(unsigned short), 1, output_file);
+				buffer_write(&b, NULL_CODE, output_file, false);
 				next_available_code = reset_code_table(codes, codes_size);
 			}
 			else {
@@ -53,7 +75,7 @@ int main(int argc, char** argv) {
 			code = codes[NULL_CODE].children[c];
 		}
 	}
-	fwrite(&code, sizeof(unsigned short), 1, output_file);
+	buffer_write(&b, code, output_file, true);
 
 	funlockfile(input_file);
 	fclose(input_file);

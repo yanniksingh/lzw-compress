@@ -7,9 +7,12 @@
 #define NULL_CODE 0
 #define FIRST_AVAILABLE_CODE 1
 #define BUFSIZE (1 << 10)
+#define MAX_NUM_CODES (USHRT_MAX + 1)
+
+typedef unsigned short code_t;
 
 typedef struct code {
-	unsigned short children[UCHAR_MAX + 1];
+	code_t children[UCHAR_MAX + 1];
 } code;
 
 static inline size_t reset_code_table(code* codes, size_t codes_size) {
@@ -24,7 +27,7 @@ static inline size_t reset_code_table(code* codes, size_t codes_size) {
 }
 
 typedef struct buffer {
-	unsigned short buf[BUFSIZE];
+	code_t buf[BUFSIZE];
 	size_t pos;
 } buffer;
 
@@ -32,19 +35,18 @@ static inline void buffer_reset(buffer* b) {
 	b->pos = 0;
 }
 
-static inline void buffer_write(buffer* b, unsigned short item, FILE* output_file, bool force_flush) {
+static inline void buffer_write(buffer* b, code_t item, FILE* output_file, bool force_flush) {
 	b->buf[b->pos] = item;
 	(b->pos)++;
 	if (b->pos == BUFSIZE || force_flush) {
-		fwrite(b->buf, sizeof(unsigned short), b->pos, output_file);
+		fwrite(b->buf, sizeof(code_t), b->pos, output_file);
 		buffer_reset(b);
 	}
 }
 
 int main(int argc, char** argv) {
-	size_t codes_size = USHRT_MAX + 1;
-	code* codes = malloc(codes_size * sizeof(code));
-	size_t next_available_code = reset_code_table(codes, codes_size);
+	code* codes = malloc(MAX_NUM_CODES * sizeof(code));
+	size_t next_available_code = reset_code_table(codes, MAX_NUM_CODES);
 
 	const char* input_path = argv[1];
 	const char* output_path = argv[2];
@@ -53,20 +55,20 @@ int main(int argc, char** argv) {
 	FILE* output_file = fopen(output_path, "wb");
 	flockfile(input_file);
 
-	unsigned short code = NULL_CODE;
+	code_t code = NULL_CODE;
 	int c;
 	buffer b;
 	buffer_reset(&b);
 	while ((c = getc_unlocked(input_file)) != EOF) {
-		unsigned short next_code = codes[code].children[c];
+		code_t next_code = codes[code].children[c];
 		if (next_code != NULL_CODE) {
 			code = next_code;
 		}
 		else {
 			buffer_write(&b, code, output_file, false);
-			if (next_available_code == codes_size) {
+			if (next_available_code == MAX_NUM_CODES) {
 				buffer_write(&b, NULL_CODE, output_file, false);
-				next_available_code = reset_code_table(codes, codes_size);
+				next_available_code = reset_code_table(codes, MAX_NUM_CODES);
 			}
 			else {
 				codes[code].children[c] = next_available_code;

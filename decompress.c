@@ -2,9 +2,11 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <string.h>
+#include <stdbool.h>
 
 #define NULL_CODE 0
 #define FIRST_AVAILABLE_CODE 1
+#define BUFSIZE (1 << 10)
 
 typedef struct reverse_code {
 	unsigned short parent;
@@ -23,6 +25,28 @@ static inline size_t reset_reverse_code_table(reverse_code* reverse_codes, size_
 	return next_available_code;
 }
 
+typedef struct buffer {
+	unsigned short buf[BUFSIZE];
+	size_t pos;
+	size_t end_pos;
+} buffer;
+
+static inline void buffer_init(buffer* b) {
+	b->pos = 0;
+	b->end_pos = 0;
+}
+
+static inline size_t buffer_read(buffer* b, unsigned short* item, FILE* input_file) {
+	if (b->pos == b->end_pos) {
+		b->pos = 0;
+		b->end_pos = fread(b->buf, sizeof(unsigned short), BUFSIZE, input_file);
+		if (b->end_pos == 0) return false;
+	}
+	*item = b->buf[b->pos];
+	(b->pos)++;
+	return true;
+}
+
 int main(int argc, char** argv) {
 	size_t reverse_codes_size = USHRT_MAX + 1;
 	reverse_code* reverse_codes = malloc(reverse_codes_size * sizeof(reverse_code));
@@ -39,7 +63,9 @@ int main(int argc, char** argv) {
 	unsigned short prev_code = NULL_CODE;
 	unsigned char* symbols = malloc(USHRT_MAX * sizeof(unsigned char));
 	int symbols_top = 0;
-	while(fread(&code, sizeof(unsigned short), 1, input_file) != 0) {
+	buffer b;
+	buffer_init(&b);
+	while(buffer_read(&b, &code, input_file)) {
 		if (code == NULL_CODE) {
 			next_available_code = reset_reverse_code_table(reverse_codes, reverse_codes_size);
 			prev_code = NULL_CODE;

@@ -47,7 +47,7 @@ typedef struct buffer {
 	size_t pos;
 } buffer;
 
-static inline void buffer_reset(buffer* b) {
+static inline void buffer_init(buffer* b) {
 	b->pos = 0;
 }
 
@@ -56,7 +56,7 @@ static inline void buffer_write(buffer* b, code_t item, FILE* output_file, bool 
 	(b->pos)++;
 	if (b->pos == BUFSIZE || force_flush) {
 		fwrite(b->buf, sizeof(code_t), b->pos, output_file);
-		buffer_reset(b);
+		b->pos = 0;
 	}
 }
 
@@ -71,7 +71,7 @@ int main(int argc, char** argv) {
 	code_table table;
 	code_table_init(&table, MAX_NUM_CODES);
 	buffer b;
-	buffer_reset(&b);
+	buffer_init(&b);
 	code_t code = NULL_CODE;
 	int byte;
 	while ((byte = getc_unlocked(input_file)) != EOF) {

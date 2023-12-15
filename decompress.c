@@ -56,6 +56,17 @@ static inline void buffer_init(buffer* b) {
 	b->end_pos = 0;
 }
 
+static inline size_t buffer_read(buffer* b, code_t* item, FILE* input_file) {
+	if (b->pos == b->end_pos) {
+		b->pos = 0;
+		b->end_pos = fread(b->buf, sizeof(code_t), BUFSIZE, input_file);
+		if (b->end_pos == 0) return false;
+	}
+	*item = b->buf[b->pos];
+	(b->pos)++;
+	return true;
+}
+
 typedef struct stack {
 	unsigned char* mem;
 	size_t size;
@@ -95,18 +106,6 @@ static inline void stack_init(stack* s, size_t capacity) {
 
 static inline void stack_free(stack* s) {
 	free(s->mem);
-}
-
-
-static inline size_t buffer_read(buffer* b, code_t* item, FILE* input_file) {
-	if (b->pos == b->end_pos) {
-		b->pos = 0;
-		b->end_pos = fread(b->buf, sizeof(code_t), BUFSIZE, input_file);
-		if (b->end_pos == 0) return false;
-	}
-	*item = b->buf[b->pos];
-	(b->pos)++;
-	return true;
 }
 
 int main(int argc, char** argv) {

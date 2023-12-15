@@ -2,6 +2,10 @@
 
 `lzw-compress` is a fast, simple file compressor that uses the LZW algorithm.
 
+More details, including a description of the algorithm, implementation details,
+and performance data can be found
+[here](https://github.com/yanniksingh/lzw-compress/blob/report/REPORT.md).
+
 ### Requirements
 
 C compiler supporting C99

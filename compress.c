@@ -7,7 +7,7 @@ typedef struct code_table_entry {
 typedef struct code_table {
 	code_table_entry* entries;
 	size_t next_available_code;
-	size_t size;
+	size_t capacity;
 } code_table;
 
 static inline code_t code_table_get(code_table* table, code_t code, unsigned char byte) {
@@ -20,11 +20,11 @@ static inline void code_table_add(code_table* table, code_t code, unsigned char 
 }
 
 static inline bool code_table_full(code_table* table) {
-	return table->next_available_code == table->size;
+	return table->next_available_code == table->capacity;
 }
 
 static inline void code_table_reset(code_table* table) {
-	memset(table->entries, 0, table->size * sizeof(code_table_entry));
+	memset(table->entries, 0, table->capacity * sizeof(code_table_entry));
 
 	table->next_available_code = FIRST_AVAILABLE_CODE;
 	for (size_t byte = 0; byte <= UCHAR_MAX; byte++) {
@@ -32,9 +32,9 @@ static inline void code_table_reset(code_table* table) {
 	}
 }
 
-static inline void code_table_init(code_table* table, size_t size) {
-	table->size = size;
-	table->entries = malloc(size * sizeof(code_table_entry));
+static inline void code_table_init(code_table* table, size_t capacity) {
+	table->capacity = capacity;
+	table->entries = malloc(capacity * sizeof(code_table_entry));
 	code_table_reset(table);
 }
 

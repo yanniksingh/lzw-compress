@@ -1,5 +1,5 @@
-CC = clang
-CFLAGS = -O3 -Wall
+CC = gcc
+CFLAGS = -O3 -Wall -std=c99 -pedantic-errors
 
 all: compress uncompress
 

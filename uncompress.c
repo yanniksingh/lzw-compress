@@ -38,6 +38,7 @@ static inline void reverse_code_table_reset(reverse_code_table* table) {
 static inline void reverse_code_table_init(reverse_code_table* table, size_t capacity) {
 	table->capacity = capacity;
 	table->entries = malloc(capacity * sizeof(reverse_code_table_entry));
+	assert(table->entries != NULL);
 	reverse_code_table_reset(table);
 }
 
@@ -79,7 +80,8 @@ static inline unsigned char stack_top(stack* s) {
 
 static inline void stack_fwrite_unlocked(stack* s, FILE* fd) {
 	for (int pos = s->size - 1; pos >= 0; pos--) {
-		putc_unlocked(s->mem[pos], fd);
+		int putc_unlocked_val = putc_unlocked(s->mem[pos], fd);
+		assert(putc_unlocked_val != EOF);
 	}
 }
 
@@ -101,6 +103,7 @@ static inline void stack_clear(stack* s) {
 static inline void stack_init(stack* s, size_t capacity) {
 	s->capacity = capacity;
 	s->mem = malloc(capacity * sizeof(unsigned char));
+	assert(s->mem != NULL);
 	stack_clear(s);
 }
 
@@ -109,10 +112,13 @@ static inline void stack_free(stack* s) {
 }
 
 int main(int argc, char** argv) {
+	check(argc == 3, "uncompress usage: ./uncompress [input-path] [output-path]");
 	const char* input_path = argv[1];
 	const char* output_path = argv[2];
 	FILE* input_file = fopen(input_path, "r");
-	FILE* output_file = fopen(output_path, "w");
+	check(input_file != NULL, "uncompress: error opening input file");
+	FILE* output_file = fopen(output_path, "wx");
+	check(output_file != NULL, "uncompress: error opening output file, it might exist already");
 	flockfile(output_file);
 
 	reverse_code_table table;
@@ -149,11 +155,14 @@ int main(int argc, char** argv) {
 		stack_fwrite_unlocked(&s, output_file);
 		prev_code = code;
 	}
+	assert(ferror(input_file) == 0);
 	reverse_code_table_free(&table);
 	stack_free(&s);
 
 	funlockfile(output_file);
-	fclose(output_file);
-	fclose(input_file);
-	return 0;
+	int input_file_close_val = fclose(input_file);
+	assert(input_file_close_val == 0);
+	int output_file_close_val = fclose(output_file);
+	assert(output_file_close_val == 0);
+	exit(EXIT_SUCCESS);
 }

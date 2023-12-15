@@ -1,14 +1,14 @@
 CC = clang
 CFLAGS = -O3 -Wall
 
-all: compress decompress
+all: compress uncompress
 
 compress: compress.c common.h
 	$(CC) $(CFLAGS) -o compress compress.c
 
-decompress: decompress.c common.h
-	$(CC) $(CFLAGS) -o decompress decompress.c
+uncompress: uncompress.c common.h
+	$(CC) $(CFLAGS) -o uncompress uncompress.c
 
 clean:
 	$(RM) compress
-	$(RM) decompress
+	$(RM) uncompress

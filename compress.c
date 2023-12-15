@@ -35,6 +35,7 @@ static inline void code_table_reset(code_table* table) {
 static inline void code_table_init(code_table* table, size_t capacity) {
 	table->capacity = capacity;
 	table->entries = malloc(capacity * sizeof(code_table_entry));
+	assert(table->entries != NULL);
 	code_table_reset(table);
 }
 
@@ -55,17 +56,21 @@ static inline void buffer_write(buffer* b, code_t item, FILE* output_file, bool 
 	b->buf[b->pos] = item;
 	(b->pos)++;
 	if (b->pos == BUFSIZE || force_flush) {
-		fwrite(b->buf, sizeof(code_t), b->pos, output_file);
+		size_t codes_written = fwrite(b->buf, sizeof(code_t), b->pos, output_file);
+		assert(codes_written == b->pos);
 		b->pos = 0;
 	}
 }
 
 int main(int argc, char** argv) {
+	check(argc == 3, "compress usage: ./compress [input-path] [output-path]");
 	const char* input_path = argv[1];
 	const char* output_path = argv[2];
 
 	FILE* input_file = fopen(input_path, "r");
-	FILE* output_file = fopen(output_path, "w");
+	check(input_file != NULL, "compress: error opening input file");
+	FILE* output_file = fopen(output_path, "wx");
+	check(output_file != NULL, "compress: error opening output file, it might exist already");
 	flockfile(input_file);
 
 	code_table table;
@@ -91,11 +96,14 @@ int main(int argc, char** argv) {
 			code = code_table_get(&table, NULL_CODE, byte);
 		}
 	}
+	assert(ferror(input_file) == 0);
 	buffer_write(&b, code, output_file, true);
 	code_table_free(&table);
 
 	funlockfile(input_file);
-	fclose(input_file);
-	fclose(output_file);
-	return 0;
+	int input_file_close_val = fclose(input_file);
+	assert(input_file_close_val == 0);
+	int output_file_close_val = fclose(output_file);
+	assert(output_file_close_val == 0);
+	exit(EXIT_SUCCESS);
 }

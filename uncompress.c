@@ -1,5 +1,14 @@
 #include "common.h"
 
+/*
+	Data structures and functions for the reverse code table, a trie that
+	maps codes to sequences of bytes. The reverse code table is implemented
+	as an array, with one slot for each code that identifies the parent code
+	in the trie and the byte that connects parent and child. Codes are assigned
+	to new byte sequences sequentially, with the empty byte sequence assigned
+	to NULL_CODE.
+*/
+
 typedef struct reverse_code_table_entry {
 	code_t parent;
 	unsigned char byte;
@@ -50,6 +59,10 @@ static inline void reverse_code_table_free(reverse_code_table* table) {
 	free(table->entries);
 }
 
+/*
+	Data structures and functions for an input buffer that reads from a file.
+*/
+
 typedef struct buffer {
 	code_t buf[BUFSIZE];
 	size_t pos;
@@ -71,6 +84,18 @@ static inline size_t buffer_read(buffer* b, code_t* item, FILE* input_file) {
 	(b->pos)++;
 	return true;
 }
+
+/*
+	Data structures and functions for a byte stack with fixed capacity,
+	which also supports an expensive "push to bottom" operation. Note that
+	this stack does no bounds checking (it is initialized in main to be
+	big enough for any input).
+
+	The stack also supports an fwrite_unlocked operation, which writes
+	out the bytes in the stack, top-to-bottom, to a file, without clearing
+	the stack. Like the underlying putc_unlocked, the function assumes
+	that the caller holds a lock on the file.
+*/
 
 typedef struct stack {
 	unsigned char* mem;
@@ -115,6 +140,11 @@ static inline void stack_free(stack* s) {
 	free(s->mem);
 }
 
+/*
+	File decompressor implemented with the LZW algorithm.
+
+	Usage: ./uncompress [input-path] [output-path]
+*/
 int main(int argc, char** argv) {
 	check(argc == 3, "uncompress usage: ./uncompress [input-path] [output-path]");
 	const char* input_path = argv[1];
@@ -136,16 +166,20 @@ int main(int argc, char** argv) {
 	code_t prev_code = NULL_CODE;
 	while(buffer_read(&b, &code, input_file)) {
 		if (code == NULL_CODE) {
+			// NULL_CODE indicates state reset
 			reverse_code_table_reset(&table);
 			prev_code = NULL_CODE;
 			stack_clear(&s);
 		}
 		else if (reverse_code_table_out_of_range(&table, code)) {
+			// Special case (read a code that has no entry yet)
 			unsigned char prev_top = stack_top(&s);
 			reverse_code_table_add(&table, prev_code, prev_top);
 			stack_push_bottom(&s, prev_top);
 		}
 		else {
+			// Code that has entry: query reverse code table to get byte sequence,
+			// and potentially add a new code to the table
 			stack_clear(&s);
 			code_t cur_code = code;
 			while (cur_code != NULL_CODE) {

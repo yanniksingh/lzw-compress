@@ -1,11 +1,19 @@
 #include "common.h"
 
+/*
+	Data structures and functions for the code table, a trie that maps
+	sequences of bytes to codes. The code table is implemented as an array,
+	with one slot for each (code * byte) pair. Codes are assigned to new
+	byte sequences sequentially, with the empty byte sequence assigned to
+	NULL_CODE.
+*/
+
 typedef struct code_table_entry {
-	code_t children[UCHAR_MAX + 1];
+	code_t children[UCHAR_MAX + 1]; // Children of this node, indexed by byte
 } code_table_entry;
 
 typedef struct code_table {
-	code_table_entry* entries;
+	code_table_entry* entries; // Indexed by code_t
 	size_t next_available_code;
 	size_t capacity;
 } code_table;
@@ -28,6 +36,7 @@ static inline bool code_table_full(code_table* table) {
 static inline void code_table_reset(code_table* table) {
 	memset(table->entries, 0, table->capacity * sizeof(code_table_entry));
 
+	// Start by assigning a code to each length-1 byte sequence
 	table->next_available_code = FIRST_AVAILABLE_CODE;
 	for (size_t byte = 0; byte <= UCHAR_MAX; byte++) {
 		code_table_add(table, NULL_CODE, byte);
@@ -44,6 +53,10 @@ static inline void code_table_init(code_table* table, size_t capacity) {
 static inline void code_table_free(code_table* table) {
 	free(table->entries);
 }
+
+/*
+	Data structures and functions for an output buffer that flushes to a file.
+*/
 
 typedef struct buffer {
 	code_t buf[BUFSIZE];
@@ -65,6 +78,11 @@ static inline void buffer_write(buffer* b, code_t item, FILE* output_file,
 	}
 }
 
+/*
+	File compressor implemented with the LZW algorithm.
+
+	Usage: ./compress [input-path] [output-path]
+*/
 int main(int argc, char** argv) {
 	check(argc == 3, "compress usage: ./compress [input-path] [output-path]");
 	const char* input_path = argv[1];
@@ -86,11 +104,15 @@ int main(int argc, char** argv) {
 	while ((byte = getc_unlocked(input_file)) != EOF) {
 		code_t next_code = code_table_get(&table, code, byte);
 		if (next_code != NULL_CODE) {
+			// Descend down the trie
 			code = next_code;
 		}
 		else {
+			// Reached a leaf: write out and reset code, try to add new trie node
 			buffer_write(&b, code, output_file, false);
 			if (code_table_full(&table)) {
+				// No room for new trie node: reset code table
+				// Output NULL_CODE as a signal to decoder to also reset here
 				buffer_write(&b, NULL_CODE, output_file, false);
 				code_table_reset(&table);
 			}

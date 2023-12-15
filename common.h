@@ -1,3 +1,6 @@
+#ifndef COMPRESS_COMMON_H
+#define COMPRESS_COMMON_H
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <limits.h>
@@ -10,3 +13,5 @@
 #define MAX_NUM_CODES (USHRT_MAX + 1)
 
 typedef unsigned short code_t;
+
+#endif

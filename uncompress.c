@@ -11,18 +11,21 @@ typedef struct reverse_code_table {
 	size_t capacity;
 } reverse_code_table;
 
-static inline void reverse_code_table_get(reverse_code_table* table, code_t code, code_t* parent, unsigned char* byte) {
+static inline void reverse_code_table_get(reverse_code_table* table,
+		code_t code, code_t* parent, unsigned char* byte) {
 	*byte = table->entries[code].byte;
 	*parent = table->entries[code].parent;
 }
 
-static inline void reverse_code_table_add(reverse_code_table* table, code_t parent, unsigned char byte) {
+static inline void reverse_code_table_add(reverse_code_table* table,
+		code_t parent, unsigned char byte) {
 	table->entries[table->next_available_code].parent = parent;
 	table->entries[table->next_available_code].byte = byte;
 	table->next_available_code++;
 }
 
-static inline bool reverse_code_table_out_of_range(reverse_code_table* table, code_t code) {
+static inline bool reverse_code_table_out_of_range(reverse_code_table* table,
+		code_t code) {
 	return code >= table->next_available_code;
 }
 
@@ -35,7 +38,8 @@ static inline void reverse_code_table_reset(reverse_code_table* table) {
 	}
 }
 
-static inline void reverse_code_table_init(reverse_code_table* table, size_t capacity) {
+static inline void reverse_code_table_init(reverse_code_table* table,
+		size_t capacity) {
 	table->capacity = capacity;
 	table->entries = malloc(capacity * sizeof(reverse_code_table_entry));
 	assert(table->entries != NULL);
@@ -118,7 +122,8 @@ int main(int argc, char** argv) {
 	FILE* input_file = fopen(input_path, "r");
 	check(input_file != NULL, "uncompress: error opening input file");
 	FILE* output_file = fopen(output_path, "wx");
-	check(output_file != NULL, "uncompress: error opening output file, it might exist already");
+	check(output_file != NULL,
+		"uncompress: error opening output file, it might exist already");
 	flockfile(output_file);
 
 	reverse_code_table table;

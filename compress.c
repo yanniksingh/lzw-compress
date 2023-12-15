@@ -10,11 +10,13 @@ typedef struct code_table {
 	size_t capacity;
 } code_table;
 
-static inline code_t code_table_get(code_table* table, code_t code, unsigned char byte) {
+static inline code_t code_table_get(code_table* table, code_t code,
+		unsigned char byte) {
 	return table->entries[code].children[byte];
 }
 
-static inline void code_table_add(code_table* table, code_t code, unsigned char byte) {
+static inline void code_table_add(code_table* table, code_t code,
+		unsigned char byte) {
 	table->entries[code].children[byte] = table->next_available_code;
 	table->next_available_code++;
 }
@@ -52,7 +54,8 @@ static inline void buffer_init(buffer* b) {
 	b->pos = 0;
 }
 
-static inline void buffer_write(buffer* b, code_t item, FILE* output_file, bool force_flush) {
+static inline void buffer_write(buffer* b, code_t item, FILE* output_file,
+		bool force_flush) {
 	b->buf[b->pos] = item;
 	(b->pos)++;
 	if (b->pos == BUFSIZE || force_flush) {
@@ -70,7 +73,8 @@ int main(int argc, char** argv) {
 	FILE* input_file = fopen(input_path, "r");
 	check(input_file != NULL, "compress: error opening input file");
 	FILE* output_file = fopen(output_path, "wx");
-	check(output_file != NULL, "compress: error opening output file, it might exist already");
+	check(output_file != NULL,
+		"compress: error opening output file, it might exist already");
 	flockfile(input_file);
 
 	code_table table;

@@ -87,7 +87,7 @@ Like `ncompress`, this implementation also reads and writes to disk in chunks to
 
 #### Benchmarking
 
-The project's two implementations were benchmarked against `ncompress` and a [Python implementation of LZ99](https://github.com/kedartatwawadi/stanford_compression_library/blob/main/scl/compressors/lz77.py). Data was collected on compressed file size, encoder throughput, and decoder throughput. All compressors were built and run with default parameters/options.
+The project's two implementations were benchmarked against `ncompress` and a [Python implementation of LZ77](https://github.com/kedartatwawadi/stanford_compression_library/blob/main/scl/compressors/lz77.py). Data was collected on compressed file size, encoder throughput, and decoder throughput. All compressors were built and run with default parameters/options.
 
 Throughput was measured based on the uncompressed file size and time taken by the encoder and decoder, as measured by the real time returned by the Unix `time` utility. The median of five runs was used, running on a machine with an Intel i5 processor.
 
